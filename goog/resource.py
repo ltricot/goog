@@ -13,8 +13,9 @@ RESOURCE_API_ATTR  = 'api'
 class ResourceType(type):
 
     @classmethod
-    def from_info(mcls, name, info):
+    def from_info(mcls: type, name: str, info: JSONDict):
         # generate methods and nested resources
+        # TODO: nested resources
         ns = {}
         for mn, mi in info.get('methods', {}).items():
             ns[mn] = make_method(mn, mi)
@@ -26,20 +27,19 @@ class ResourceType(type):
 
 
 class Resource(metaclass=ResourceType):
-    ...
+
+    def __init__(self):
+        ...
 
 
 class ResourceDescriptor:
 
-    # TODO: apit: APIType
-    # but circular import is an issue
     def __set_name__(self, apit: type, name: str):
         setattr(self._resource, RESOURCE_API_ATTR, apit)
 
     def __init__(self, name: str, info: JSONDict):
         # TODO: set documentation to something interesting
         # no description in API surface document
-
         self.__doc__ = None
         self.name = name
 
@@ -53,7 +53,7 @@ class ResourceDescriptor:
         return self._resource
 
 
-    # the following methods complete the data decriptor protocol
+    # the following two methods complete the data decriptor protocol
     # they are necessary to show documentation when invoking help
 
     def __set__(self, obj: Any, value: Any):

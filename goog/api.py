@@ -2,7 +2,7 @@ from .resource import ResourceDescriptor
 from .common import JSONDict
 
 
-def make_api_type(name, info):
+def make_api_type(name: str, info: JSONDict):
     return APIType.from_info(name, info)
 
 
@@ -12,7 +12,7 @@ API_INFO_ATTR = 'infodoc'
 class APIType(type):
 
     @classmethod
-    def from_info(mcls, name, info):
+    def from_info(mcls: type, name: str, info: JSONDict):
         # generate resource descriptors
         ns = {}
         for rn, ri in info.get('resources', {}).items():

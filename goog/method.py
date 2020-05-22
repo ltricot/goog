@@ -32,11 +32,11 @@ def make_method(name, info) -> Callable:
             if pi['location'] == 'path'
         }
 
+        # query parameters
         query = {
             pn for pn, pi in infodoc['parameters'].items()
             if pi['location'] == 'query'
         }
-        # -----
 
         # TODO:
         # doing this means there is no point in
@@ -45,6 +45,7 @@ def make_method(name, info) -> Callable:
         #  - RESOURCE_INFO_ATTR
         url_template = self.api.infodoc['baseUrl']
         url_template = os.path.join(url_template, infodoc['path'])
+        # -----
 
         pars = method.__signature__.bind(self, *args, **kwargs)
 
