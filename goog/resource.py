@@ -8,6 +8,7 @@ from .common import JSONDict
 
 RESOURCE_INFO_ATTR = 'infodoc'
 RESOURCE_API_ATTR  = 'api'
+RESOURCE_METHOD_MARKER = '__is_method__'
 
 
 class ResourceType(type):
@@ -16,12 +17,15 @@ class ResourceType(type):
     def from_info(mcls: type, name: str, info: JSONDict):
         # generate methods and nested resources
         # TODO: nested resources
+        rinfo = info['resources'][name]
+
         ns = {}
-        for mn, mi in info.get('methods', {}).items():
-            ns[mn] = make_method(mn, mi)
+        for mn in rinfo.get('methods', {}):
+            ns[mn] = make_method(mn, name, info)
+            setattr(ns[mn], RESOURCE_METHOD_MARKER, True)
 
         assert RESOURCE_INFO_ATTR not in ns
-        ns[RESOURCE_INFO_ATTR] = info
+        ns[RESOURCE_INFO_ATTR] = rinfo
 
         return mcls(name, (Resource,), ns)
 
@@ -36,6 +40,7 @@ class ResourceDescriptor:
 
     def __set_name__(self, apit: type, name: str):
         setattr(self._resource, RESOURCE_API_ATTR, apit)
+        assert name == self.name
 
     def __init__(self, name: str, info: JSONDict):
         # TODO: set documentation to something interesting

@@ -15,8 +15,8 @@ class APIType(type):
     def from_info(mcls: type, name: str, info: JSONDict):
         # generate resource descriptors
         ns = {}
-        for rn, ri in info.get('resources', {}).items():
-            ns[rn] = ResourceDescriptor(rn, ri)
+        for rn in info.get('resources', {}):
+            ns[rn] = ResourceDescriptor(rn, info)
 
         assert API_INFO_ATTR not in info
         ns[API_INFO_ATTR] = info

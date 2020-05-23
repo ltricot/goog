@@ -1,6 +1,8 @@
+from collections import defaultdict
 from functools import lru_cache
 from urllib.request import urlopen
-import json
+from urllib.error import HTTPError
+import json, gzip
 
 from typing import Optional
 
@@ -10,6 +12,11 @@ from .api import make_api_type, API
 
 
 DISCOVERY = 'https://www.googleapis.com/discovery/v1'
+DISCOVERY_V1 = f'{DISCOVERY}' '/apis/{name}/{version}/rest'
+DISCOVERY_V2 = (
+    'https://{name}.googleapis.com/$discovery/rest?'
+    'version={version}'
+)
 
 
 @lru_cache
@@ -40,6 +47,10 @@ def _list_apis() -> JSONDict:
     with urlopen(f'{DISCOVERY}/apis') as resp:
         return b'\n'.join(resp)
 
+apis = defaultdict(list)
+for api in _list_apis()['items']:
+    apis[api['name']].append(api['version'])
+
 def _get_default_version(name: str) -> str:
     '''Returns the JSON object describing the preferred version of the API
     name.
@@ -67,5 +78,22 @@ def _surface_doc(name: str, version: str) -> JSONDict:
     '''Convenience function to fetch and cache google's surface document
     describing all services covered by the discovery API.'''
 
-    with urlopen(f'{DISCOVERY}/apis/{name}/{version}/rest') as resp:
-        return b'\n'.join(resp)
+    exc = None
+
+    # google offers multiple versions :)
+    for template in (DISCOVERY_V1, DISCOVERY_V2):
+        try:
+            with urlopen(template.format(name=name, version=version)) as resp:
+                binary = resp.read()
+
+                if resp.info().get('Content-Encoding') == 'gzip':
+                    binary = gzip.decompress(binary)
+
+                return binary
+
+        except HTTPError as e:
+            exc = e
+            pass
+
+    # cannot be None
+    raise exc

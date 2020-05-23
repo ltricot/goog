@@ -3,3 +3,7 @@
 
 apis.json
 *.vim*
+
+build/
+dist/
+goog.egg-info/

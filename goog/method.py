@@ -20,33 +20,28 @@ def _get_annot(tp):
     }[tp]
 
 
-def make_method(name, info) -> Callable:
+def make_method(name: str, rname: str, info: JSONDict) -> Callable:
+    rinfo = info['resources'][rname]
+    minfo = rinfo['methods'][name]
+
+    parameters = minfo.get('parameters', {})
+
+    # path parameters
+    path = {
+        pn for pn, pi in parameters.items()
+        if pi['location'] == 'path'
+    }
+
+    # query parameters
+    query = {
+        pn for pn, pi in parameters.items()
+        if pi['location'] == 'query'
+    }
+
+    url_template = info['baseUrl']
+    url_template = os.path.join(url_template, minfo['path'])
+
     def method(self, *args, **kwargs):
-        # TODO: find a way to cache computation
-        # -----
-        infodoc = self.infodoc['methods'][name]
-
-        # path parameters
-        path = {
-            pn for pn, pi in infodoc['parameters'].items()
-            if pi['location'] == 'path'
-        }
-
-        # query parameters
-        query = {
-            pn for pn, pi in infodoc['parameters'].items()
-            if pi['location'] == 'query'
-        }
-
-        # TODO:
-        # doing this means there is no point in
-        #  - API_INFO_ATTR
-        #  - RESOURCE_API_ATTR
-        #  - RESOURCE_INFO_ATTR
-        url_template = self.api.infodoc['baseUrl']
-        url_template = os.path.join(url_template, infodoc['path'])
-        # -----
-
         pars = method.__signature__.bind(self, *args, **kwargs)
 
         url = url_template.format(**{
@@ -59,18 +54,20 @@ def make_method(name, info) -> Callable:
             if pn in query
         }
 
-        return aiohttp.request(
-            method=infodoc['httpMethod'],
-            url=url,
-            params=query_parameters,
-        )
+        return minfo['httpMethod'], url, query_parameters
+
+        # return aiohttp.request(
+        #     method=minfo['httpMethod'],
+        #     url=url,
+        #     params=query_parameters,
+        # )
 
     method.__name__ = name
-    method.__doc__ = info.get('description')
+    method.__doc__ = minfo.get('description')
 
     # create signature using json schema of parameters
-    parameters = {}
-    for pn, pi in info.get('parameters', {}).items():
+    sig_parameters = {}
+    for pn, pi in parameters.items():
         kind = Parameter.KEYWORD_ONLY
         if pi.get('required', False):
             kind = Parameter.POSITIONAL_OR_KEYWORD
@@ -102,12 +99,12 @@ def make_method(name, info) -> Callable:
             annotation=tp,
         )
 
-        parameters[pn] = p
+        sig_parameters[pn] = p
 
     sorted_parameters = [Parameter('self', kind=Parameter.POSITIONAL_ONLY)]
     for p in info.get('parameterOrder', ()):
-        sorted_parameters.append(parameters.pop(p))
-    sorted_parameters.extend(parameters.values())
+        sorted_parameters.append(sig_parameters.pop(p))
+    sorted_parameters.extend(sig_parameters.values())
 
     # TODO: return_annotation, see aiohttp annotations
     sig = Signature(sorted_parameters)
