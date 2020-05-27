@@ -5,7 +5,7 @@ from inspect import Signature, Parameter
 import os.path
 import re
 
-from typing import Any, List, Callable
+from typing import Any, List, Callable, Optional
 from .common import JSONDict
 
 
@@ -33,7 +33,8 @@ def _parameter_name(pn: str):
         return f'x{pn[1:]}'
     return pn
 
-def make_method(name: str, rname: str, info: JSONDict) -> Callable:
+def make_method(name: str, rname: str, info: JSONDict,
+        nested: Optional[str]=None) -> Callable:
     '''Create method for a resource managed by an API.
     
     Args:
@@ -46,7 +47,12 @@ def make_method(name: str, rname: str, info: JSONDict) -> Callable:
         google api: a tuple (method, url, parameters, headers, body).
     '''
 
-    rinfo = info['resources'][rname]
+    if nested:
+        rinfo = info['resources'][nested]
+        rinfo = rinfo['resources'][rname]
+    else:
+        rinfo = info['resources'][rname]
+
     minfo = rinfo['methods'][name]
 
     # TODO: add undocumented method parameters unavailable through discovery:

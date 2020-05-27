@@ -42,11 +42,17 @@ def _gac_resource_methods(resource):
 class ApiCoverage(unittest.TestCase):
     '''Concerned with which service coverage, resource coverage in each service,
     and method coverage in each resource of each service.
+
+    We test the construction of all exposed APIs. Those which throw errors in
+    the reference library are not tested (skipped).
     '''
 
     def setUp(self):
         self.services = defaultdict(dict)
 
+    # do not skip this test, it sets up the others
+    # it runs first because of alphabetical order
+    # yes this is terrible practice
     def test_discovery(self):
         for api in apis:
             for version in apis[api]:

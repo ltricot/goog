@@ -1,13 +1,9 @@
 from .resource import ResourceDescriptor
-from .common import JSONDict
+from .common import JSONDict, API_INFO_ATTR, API_RESOURCE_MARKER
 
 
 def make_api_type(name: str, info: JSONDict):
     return APIType.from_info(name, info)
-
-
-API_INFO_ATTR = 'infodoc'
-API_RESOURCE_MARKER = '__is_resource__'
 
 
 class APIType(type):
