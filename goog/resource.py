@@ -32,8 +32,11 @@ class ResourceType(type):
 
 class Resource(metaclass=ResourceType):
 
-    def __init__(self):
-        ...
+    def __iter__(self):
+        for key, val in vars(type(self)).items():
+            if hasattr(val, RESOURCE_METHOD_MARKER):
+                method = getattr(self, key)
+                yield method
 
 
 class ResourceDescriptor:

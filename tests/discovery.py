@@ -1,5 +1,7 @@
 from googleapiclient.discovery import build, Resource
+from googleapiclient.errors import UnknownApiNameOrVersion
 
+from urllib.error import HTTPError
 from collections import defaultdict
 import unittest
 
@@ -49,7 +51,18 @@ class ApiCoverage(unittest.TestCase):
         for api in apis:
             for version in apis[api]:
                 with self.subTest(api=api, version=version):
-                    self.services[api][version] = discover(api, version)
+                    try:
+                        self.services[api][version] = discover(api, version)
+                    except HTTPError as e:
+                        try:
+                            build(api, version)
+                        except UnknownApiNameOrVersion:
+                            self.skipTest(
+                                f'{api} {version} isn\'t found by '
+                                'reference library either'
+                            )
+                        else:
+                            raise e
 
     def test_resources(self):
         for api in self.services:

@@ -7,6 +7,7 @@ def make_api_type(name: str, info: JSONDict):
 
 
 API_INFO_ATTR = 'infodoc'
+API_RESOURCE_MARKER = '__is_resource__'
 
 
 class APIType(type):
@@ -17,6 +18,7 @@ class APIType(type):
         ns = {}
         for rn in info.get('resources', {}):
             ns[rn] = ResourceDescriptor(rn, info)
+            setattr(ns[rn], API_RESOURCE_MARKER, True)
 
         assert API_INFO_ATTR not in info
         ns[API_INFO_ATTR] = info
@@ -26,4 +28,9 @@ class APIType(type):
 
 
 class API(metaclass=APIType):
-    ...
+
+    def __iter__(self):
+        for key, val in vars(type(self)).items():
+            if hasattr(val, API_RESOURCE_MARKER):
+                resource = getattr(self, key)
+                yield resource
